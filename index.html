@@ -3,7 +3,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>天筑工程设计院 | 建筑设计的艺术与精准</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -11,6 +11,7 @@
         body {
             font-family: 'Noto Sans SC', sans-serif;
             scroll-behavior: smooth;
+            background-color: #f9f8f6;
         }
         .font-serif {
             font-family: 'Playfair Display', serif;
@@ -33,6 +34,39 @@
             font-family: 'Playfair Display', serif;
             font-style: italic;
         }
+        /* Loading animation for early injection */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: #f9f8f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .loader-line {
+            width: 120px;
+            height: 2px;
+            background: #e5e5e5;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .loader-line::after {
+            content: '';
+            position: absolute;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: #1c1917;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
     </style>
 <script type="importmap">
 {
@@ -49,8 +83,25 @@
 </script>
 </head>
 <body class="bg-stone-50 text-stone-900 overflow-x-hidden">
+    <div id="loading-overlay">
+        <div class="loader-line"></div>
+        <span style="font-size: 10px; letter-spacing: 0.4em; font-weight: bold; color: #a8a29e; text-transform: uppercase;">Initializing Design Studio</span>
+    </div>
+
     <div id="root"></div>
-    <!-- Explicitly reference the entry point for build environments -->
-    <script type="module" src="/index.tsx"></script>
+
+    <!-- Fix: Relative path for script source to ensure compatibility with GitHub Pages subdirectories -->
+    <script type="module" src="./index.tsx"></script>
+
+    <script>
+        // Remove loading overlay when the app has likely hydrated
+        window.addEventListener('load', () => {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.remove(), 500);
+            }
+        });
+    </script>
 </body>
 </html>

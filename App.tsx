@@ -21,7 +21,6 @@ import { Project } from './types';
 
 // --- Utility Components ---
 
-// Fix: Making children optional to satisfy JSX type checking when passed as nested elements
 const FadeInView = ({ children, delay = 0, direction = 'up' }: { children?: React.ReactNode, delay?: number, direction?: 'up' | 'down' | 'left' | 'right' }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -178,7 +177,6 @@ const Hero = () => {
                 <div className="absolute inset-0 bg-stone-900/10 mix-blend-multiply"></div>
               </div>
               
-              {/* Floating Element */}
               <motion.div 
                 animate={{ y: [0, -20, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -190,13 +188,11 @@ const Hero = () => {
               </motion.div>
             </div>
             
-            {/* Background decorative element */}
             <div className="absolute -bottom-10 -left-10 w-full h-full border-2 border-stone-200 -z-10 translate-x-4 translate-y-4"></div>
           </FadeInView>
         </div>
       </div>
       
-      {/* Scroll indicator */}
       <motion.div 
         animate={{ y: [0, 10, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
@@ -366,7 +362,6 @@ const ProjectsGallery = () => {
                     alt={project.title} 
                     className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
                   />
-                  {/* Overlay Info */}
                   <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-stone-900 via-stone-900/20 to-transparent translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                     <span className="text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase mb-2 block">{project.category}</span>
                     <h4 className="text-2xl font-bold text-white mb-4 leading-tight">{project.title}</h4>
@@ -431,17 +426,6 @@ const AIStudio = () => {
                   {isGenerating ? '正在构思...' : '立即生成'}
                 </button>
               </div>
-              
-              <div className="flex items-center space-x-6">
-                <div className="flex -space-x-2">
-                  {[1,2,3,4].map(i => (
-                    <div key={i} className="w-8 h-8 rounded-full border-2 border-stone-900 overflow-hidden">
-                      <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
-                    </div>
-                  ))}
-                </div>
-                <span className="text-xs text-stone-500 font-bold tracking-widest">已有 2,400+ 建筑师使用 AI 进行概念辅助</span>
-              </div>
             </div>
           </div>
 
@@ -456,11 +440,6 @@ const AIStudio = () => {
                     className="w-full h-full p-4"
                   >
                     <img src={result} alt="AI Blueprint" className="w-full h-full object-contain" />
-                    <div className="absolute top-8 right-8 flex space-x-2">
-                      <button className="p-2 bg-stone-900/80 border border-white/20 hover:bg-white hover:text-stone-900 transition-all">
-                        <Maximize2 size={16} />
-                      </button>
-                    </div>
                   </motion.div>
                 ) : (
                   <motion.div 
@@ -482,10 +461,6 @@ const AIStudio = () => {
                 )}
               </AnimatePresence>
             </div>
-            
-            {/* Architectural Grid Lines decoration */}
-            <div className="absolute -top-4 -left-4 w-12 h-12 border-t-2 border-l-2 border-stone-700 pointer-events-none"></div>
-            <div className="absolute -bottom-4 -right-4 w-12 h-12 border-b-2 border-r-2 border-stone-700 pointer-events-none"></div>
           </div>
         </div>
       </div>
@@ -508,13 +483,6 @@ const Footer = () => {
             <h4 className="text-3xl font-bold text-stone-900 mb-8 leading-snug">
               为您打造具有时代精神与<br />人文关怀的建筑地标
             </h4>
-            <div className="flex space-x-6">
-              {['Wechat', 'Xiaohongshu', 'Instagram'].map(social => (
-                <a key={social} href="#" className="text-xs font-black tracking-[0.2em] uppercase text-stone-400 hover:text-stone-900 transition-colors">
-                  {social}
-                </a>
-              ))}
-            </div>
           </div>
           
           <div className="md:col-span-2">
@@ -522,26 +490,13 @@ const Footer = () => {
             <ul className="space-y-5 text-sm font-bold">
               <li><a href="#作品集" className="text-stone-500 hover:text-stone-900 transition-colors">作品全集</a></li>
               <li><a href="#设计流程" className="text-stone-500 hover:text-stone-900 transition-colors">设计流程</a></li>
-              <li><a href="#AI实验室" className="text-stone-500 hover:text-stone-900 transition-colors">AI实验室</a></li>
-              <li><a href="#" className="text-stone-500 hover:text-stone-900 transition-colors">联系我们</a></li>
             </ul>
           </div>
 
-          <div className="md:col-span-2">
-            <h5 className="font-black text-xs tracking-[0.3em] uppercase text-stone-300 mb-10">服务范畴</h5>
-            <ul className="space-y-5 text-sm font-bold text-stone-500">
-              <li>超高层办公</li>
-              <li>高端豪宅</li>
-              <li>城市旧改</li>
-              <li>景观与室内</li>
-            </ul>
-          </div>
-
-          <div className="md:col-span-3">
+          <div className="md:col-span-5">
             <h5 className="font-black text-xs tracking-[0.3em] uppercase text-stone-300 mb-10">天筑总部</h5>
             <p className="text-stone-500 text-sm font-bold leading-relaxed mb-6">
-              上海市静安区苏州河路1908号<br />
-              天筑设计大厦 8-12F
+              上海市静安区苏州河路1908号 天筑设计大厦 8-12F
             </p>
             <p className="text-stone-900 text-xl font-bold">+86 (21) 5288 9900</p>
           </div>
@@ -549,18 +504,11 @@ const Footer = () => {
         
         <div className="flex flex-col md:flex-row justify-between items-center pt-16 border-t border-stone-200">
           <p className="text-[10px] font-bold text-stone-400 tracking-[0.1em]">© 2024 TIANZHU ENGINEERING DESIGN INSTITUTE. ALL RIGHTS RESERVED.</p>
-          <div className="flex items-center space-x-2 mt-6 md:mt-0 opacity-40 grayscale">
-            <div className="w-8 h-8 border border-stone-900 flex items-center justify-center font-bold text-[10px]">GB</div>
-            <div className="w-8 h-8 border border-stone-900 flex items-center justify-center font-bold text-[10px]">A+</div>
-            <div className="w-8 h-8 border border-stone-900 flex items-center justify-center font-bold text-[10px]">ISO</div>
-          </div>
         </div>
       </div>
     </footer>
   );
 };
-
-// --- Main App ---
 
 const App: React.FC = () => {
   const { scrollYProgress } = useScroll();
@@ -572,13 +520,11 @@ const App: React.FC = () => {
 
   return (
     <div className="relative selection:bg-stone-900 selection:text-white">
-      {/* Scroll Progress Bar */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-[3px] bg-stone-900 origin-left z-[100]"
         style={{ scaleX }}
       />
       
-      {/* Custom Cursor Decoration (optional visual flair) */}
       <div className="fixed top-0 left-0 pointer-events-none z-[9999] p-4 hidden lg:block">
         <MousePointer2 size={12} className="text-stone-400 rotate-12" />
       </div>
@@ -587,17 +533,11 @@ const App: React.FC = () => {
       
       <main>
         <Hero />
-        
-        {/* Subtle separator */}
         <div className="w-full h-20 bg-gradient-to-b from-[#f9f8f6] to-white"></div>
-        
         <ProcessEvolution />
-        
         <ProjectsGallery />
-        
         <AIStudio />
         
-        {/* Contact CTA Section */}
         <section className="py-40 bg-white overflow-hidden relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-black text-stone-50/50 whitespace-nowrap pointer-events-none -z-10 uppercase italic">
             TIANZHU DESIGN
