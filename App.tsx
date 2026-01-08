@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useSpring, useInView } from 'framer-motion';
 import { 
   Compass, 
   PenTool, 
@@ -12,12 +12,47 @@ import {
   ArrowRight,
   Menu,
   X,
-  Plus
+  Plus,
+  ArrowUpRight,
+  MousePointer2
 } from 'lucide-react';
 import { generateArchitecturalSketch } from './services/geminiService';
 import { Project } from './types';
 
-// --- Components ---
+// --- Utility Components ---
+
+// Fix: Making children optional to satisfy JSX type checking when passed as nested elements
+const FadeInView = ({ children, delay = 0, direction = 'up' }: { children?: React.ReactNode, delay?: number, direction?: 'up' | 'down' | 'left' | 'right' }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  
+  const variants = {
+    hidden: { 
+      opacity: 0, 
+      y: direction === 'up' ? 40 : direction === 'down' ? -40 : 0,
+      x: direction === 'left' ? 40 : direction === 'right' ? -40 : 0
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      x: 0,
+      transition: { duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }
+    }
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={variants}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// --- Sections ---
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -30,27 +65,31 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${isScrolled ? 'bg-white/90 backdrop-blur-xl shadow-sm py-4' : 'bg-transparent py-8'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-3 cursor-pointer"
         >
-          <div className="w-10 h-10 bg-stone-900 flex items-center justify-center rounded-sm">
-            <span className="text-white font-bold text-xl">T</span>
+          <div className="w-10 h-10 bg-stone-900 flex items-center justify-center rounded-none transform rotate-45 group hover:rotate-0 transition-transform duration-500">
+            <span className="text-white font-bold text-xl -rotate-45 group-hover:rotate-0 transition-transform">T</span>
           </div>
-          <span className={`font-bold tracking-widest text-lg ${isScrolled ? 'text-stone-900' : 'text-stone-900'}`}>天筑设计</span>
+          <div className="flex flex-col leading-none">
+            <span className="font-bold tracking-[0.2em] text-lg">TIANZHU</span>
+            <span className="text-[10px] tracking-[0.4em] text-stone-400 mt-1 uppercase">Engineering Design</span>
+          </div>
         </motion.div>
 
-        <div className="hidden md:flex space-x-10">
-          {['作品集', '设计流程', 'AI灵感', '关于我们'].map((item) => (
+        <div className="hidden md:flex space-x-12">
+          {['作品集', '设计流程', 'AI实验室', '关于天筑'].map((item) => (
             <a 
               key={item} 
               href={`#${item}`} 
-              className="text-stone-600 hover:text-stone-900 text-sm font-medium tracking-wide transition-colors"
+              className="relative text-stone-600 hover:text-stone-900 text-sm font-bold tracking-widest transition-colors group"
             >
               {item}
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-stone-900 transition-all duration-300 group-hover:w-full"></span>
             </a>
           ))}
         </div>
@@ -58,9 +97,10 @@ const Navbar = () => {
         <motion.button 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="hidden md:block bg-stone-900 text-white px-6 py-2 rounded-full text-sm font-medium"
+          className="hidden md:flex items-center space-x-2 bg-stone-900 text-white px-7 py-2.5 rounded-none text-xs font-bold tracking-widest hover:bg-stone-800 transition-all shadow-lg shadow-stone-200"
         >
-          预约咨询
+          <span>预约合作</span>
+          <ArrowUpRight size={14} />
         </motion.button>
 
         <button className="md:hidden text-stone-900" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -71,19 +111,17 @@ const Navbar = () => {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-b overflow-hidden"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-stone-100 p-8 flex flex-col space-y-6 shadow-xl"
           >
-            <div className="flex flex-col p-6 space-y-4">
-              {['作品集', '设计流程', 'AI灵感', '关于我们'].map((item) => (
-                <a key={item} href={`#${item}`} className="text-stone-800 text-lg font-medium" onClick={() => setMobileMenuOpen(false)}>
-                  {item}
-                </a>
-              ))}
-              <button className="bg-stone-900 text-white px-6 py-3 rounded-md">预约咨询</button>
-            </div>
+            {['作品集', '设计流程', 'AI实验室', '关于天筑'].map((item) => (
+              <a key={item} href={`#${item}`} className="text-stone-800 text-xl font-bold tracking-widest" onClick={() => setMobileMenuOpen(false)}>
+                {item}
+              </a>
+            ))}
+            <button className="bg-stone-900 text-white py-4 font-bold tracking-widest">预约合作</button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -93,111 +131,176 @@ const Navbar = () => {
 
 const Hero = () => {
   return (
-    <section className="relative h-screen flex items-center overflow-hidden bg-stone-100">
-      <div className="absolute inset-0 opacity-10">
-        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <path d="M0 0 L100 100 M0 100 L100 0" stroke="currentColor" strokeWidth="0.1" />
-          <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="0.1" />
-        </svg>
+    <section className="relative h-screen flex items-center arch-grid overflow-hidden bg-[#f9f8f6]">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/40 pointer-events-none"></div>
+      
+      <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center z-10 pt-20">
+        <div className="lg:col-span-7">
+          <FadeInView direction="right">
+            <h2 className="text-xs font-black tracking-[0.5em] text-stone-400 uppercase mb-6 flex items-center space-x-3">
+              <span className="w-12 h-[1px] bg-stone-300 inline-block"></span>
+              <span>EST. 2005 · ARCHITECTURE</span>
+            </h2>
+            <h1 className="text-6xl md:text-8xl font-bold text-stone-900 leading-[1.1] mb-8">
+              构筑<span className="sketch-font text-stone-500">灵感</span><br />
+              印刻<span className="font-serif italic border-b-2 border-stone-300">永恒</span>
+            </h1>
+            <p className="text-stone-500 text-xl mb-12 max-w-xl leading-relaxed font-light">
+              从最初的一笔手绘勾勒，到精确至毫米的CAD制图。我们不仅在建造空间，更是在为理想生活设计容器。
+            </p>
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+              <motion.button 
+                whileHover={{ x: 10 }}
+                className="bg-stone-900 text-white px-10 py-5 flex items-center justify-between group min-w-[220px]"
+              >
+                <span className="font-bold tracking-widest">查看项目作品</span>
+                <ArrowRight className="ml-4" size={20} />
+              </motion.button>
+              <button className="flex items-center space-x-4 px-6 text-stone-800 font-bold tracking-widest group">
+                <span className="p-3 rounded-full border border-stone-200 group-hover:bg-stone-100 transition-colors">
+                  <Maximize2 size={18} />
+                </span>
+                <span>观看设计短片</span>
+              </button>
+            </div>
+          </FadeInView>
+        </div>
+
+        <div className="lg:col-span-5 relative hidden lg:block">
+          <FadeInView delay={0.3} direction="left">
+            <div className="relative z-10">
+              <div className="aspect-[4/5] overflow-hidden rounded-sm shadow-2xl relative border-8 border-white">
+                <img 
+                  src="https://images.unsplash.com/photo-1503387762-592dea58ef21?auto=format&fit=crop&q=80&w=800" 
+                  alt="Architectural Draft" 
+                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                />
+                <div className="absolute inset-0 bg-stone-900/10 mix-blend-multiply"></div>
+              </div>
+              
+              {/* Floating Element */}
+              <motion.div 
+                animate={{ y: [0, -20, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-12 -right-12 bg-white p-6 shadow-2xl border border-stone-100 max-w-[200px]"
+              >
+                <PenTool size={24} className="text-stone-400 mb-4" />
+                <h4 className="text-xs font-bold tracking-widest uppercase mb-2">手绘原型</h4>
+                <p className="text-[10px] text-stone-500 leading-tight">保留线条最初的张力与呼吸感，这是设计的灵魂起点。</p>
+              </motion.div>
+            </div>
+            
+            {/* Background decorative element */}
+            <div className="absolute -bottom-10 -left-10 w-full h-full border-2 border-stone-200 -z-10 translate-x-4 translate-y-4"></div>
+          </FadeInView>
+        </div>
       </div>
       
-      <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <h2 className="text-sm font-bold tracking-[0.4em] text-stone-400 uppercase mb-4">ENGINEERING DESIGN INSTITUTE</h2>
-          <h1 className="text-5xl md:text-7xl font-bold text-stone-900 leading-tight mb-8">
-            从灵感微光<br />
-            到<span className="font-serif italic text-stone-500 underline decoration-stone-300 underline-offset-8">建筑宏图</span>
-          </h1>
-          <p className="text-stone-500 text-lg mb-10 max-w-lg leading-relaxed">
-            我们致力于将最原始的艺术构思，转化为严谨的工程实践。通过手绘的温度与CAD的精准，定义现代空间。
-          </p>
-          <div className="flex space-x-4">
-            <button className="bg-stone-900 text-white px-8 py-4 rounded-full flex items-center space-x-2 group hover:bg-stone-800 transition-all">
-              <span>探索作品</span>
-              <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
-            </button>
-            <button className="border border-stone-300 text-stone-900 px-8 py-4 rounded-full hover:bg-white transition-all">
-              了解流程
-            </button>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="relative"
-        >
-          <div className="aspect-[4/5] overflow-hidden rounded-2xl shadow-2xl">
-            <img 
-              src="https://picsum.photos/seed/arch1/800/1000" 
-              alt="Architecture Hero" 
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000"
-            />
-          </div>
-          <div className="absolute -bottom-10 -left-10 bg-white p-8 rounded-lg shadow-xl max-w-xs hidden md:block">
-            <div className="flex items-center space-x-3 mb-2">
-              <PenTool size={20} className="text-stone-400" />
-              <span className="text-xs font-bold tracking-widest text-stone-400">CONCEPT STAGE</span>
-            </div>
-            <p className="text-stone-800 font-medium">手工草绘赋予建筑灵魂，第一笔决定未来。</p>
-          </div>
-        </motion.div>
-      </div>
+      {/* Scroll indicator */}
+      <motion.div 
+        animate={{ y: [0, 10, 0] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-2 opacity-40"
+      >
+        <span className="text-[10px] tracking-[0.4em] uppercase font-bold">向下滚动</span>
+        <div className="w-[1px] h-12 bg-stone-900"></div>
+      </motion.div>
     </section>
   );
 };
 
-const ProcessSection = () => {
+const ProcessEvolution = () => {
+  const [activeStep, setActiveStep] = useState(0);
   const steps = [
     {
-      icon: <Compass size={32} />,
-      title: "概念发散",
-      desc: "与客户深度沟通，探索地块潜力，捕捉初步设计灵感。"
+      title: "1. 艺术构思",
+      label: "Concept",
+      desc: "打破常规，在纸面释放想象。每一根手绘线条都承载着建筑师的初步直觉。",
+      image: "https://images.unsplash.com/photo-1517581177682-a085bb7ffb15?auto=format&fit=crop&q=80&w=1200",
+      icon: <PenTool size={24} />
     },
     {
-      icon: <PenTool size={32} />,
-      title: "手绘草案",
-      desc: "建筑师以细腻的手笔，在纸面勾勒出空间感与光影关系。"
+      title: "2. 技术精控",
+      label: "CAD Draft",
+      desc: "理性的尺度介入。将艺术美感转化为严谨的工程语言，确定每一处梁柱的坐标。",
+      image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=1200",
+      icon: <Layers size={24} />
     },
     {
-      icon: <Layers size={32} />,
-      title: "CAD精化",
-      desc: "利用专业工具将艺术转化为毫米级的工程图纸，确保落地。"
-    },
-    {
-      icon: <Maximize2 size={32} />,
-      title: "三维模拟",
-      desc: "全方位BIM建模，预演建筑在真实环境中的表现。"
+      title: "3. 落地实施",
+      label: "Execution",
+      desc: "材料、光影与现实的碰撞。我们驻扎现场，确保图纸上的每一个像素都能完美落地。",
+      image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200",
+      icon: <Maximize2 size={24} />
     }
   ];
 
   return (
-    <section id="设计流程" className="py-24 bg-white">
+    <section id="设计流程" className="py-32 bg-stone-900 text-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-20">
-          <h2 className="text-3xl font-bold mb-4">我们的专业路径</h2>
-          <div className="w-20 h-1 bg-stone-900 mx-auto"></div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {steps.map((step, idx) => (
-            <motion.div 
-              key={idx}
-              whileHover={{ y: -10 }}
-              className="group p-8 border border-stone-100 rounded-xl hover:shadow-lg transition-all"
-            >
-              <div className="w-16 h-16 bg-stone-50 rounded-lg flex items-center justify-center mb-6 group-hover:bg-stone-900 group-hover:text-white transition-colors">
-                {step.icon}
-              </div>
-              <h3 className="text-xl font-bold mb-4">{step.title}</h3>
-              <p className="text-stone-500 leading-relaxed text-sm">{step.desc}</p>
-            </motion.div>
-          ))}
+        <FadeInView>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
+            <div className="max-w-xl">
+              <h2 className="text-xs font-bold tracking-[0.4em] text-stone-500 uppercase mb-4">EVOLUTION PROCESS</h2>
+              <h3 className="text-4xl md:text-5xl font-bold">从线条到空间的进化</h3>
+            </div>
+            <div className="flex space-x-4">
+              {steps.map((_, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => setActiveStep(idx)}
+                  className={`w-12 h-1 bg-stone-700 transition-all ${activeStep === idx ? 'bg-white w-20' : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+        </FadeInView>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          <div className="lg:col-span-5">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="space-y-8"
+              >
+                <div className="w-16 h-16 bg-white/5 border border-white/10 flex items-center justify-center rounded-sm">
+                  {steps[activeStep].icon}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold tracking-widest text-stone-400 mb-2">{steps[activeStep].label}</h4>
+                  <h3 className="text-3xl font-bold mb-6">{steps[activeStep].title}</h3>
+                  <p className="text-stone-400 text-lg leading-relaxed">{steps[activeStep].desc}</p>
+                </div>
+                <button className="group flex items-center space-x-3 text-white font-bold tracking-widest hover:text-stone-300 transition-colors">
+                  <span>了解更多技术细节</span>
+                  <ChevronRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                </button>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <div className="lg:col-span-7">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeStep}
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 1 }}
+                className="aspect-video overflow-hidden rounded-sm relative group"
+              >
+                <img 
+                  src={steps[activeStep].image} 
+                  alt={steps[activeStep].title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-stone-900/40 group-hover:bg-transparent transition-colors duration-700"></div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </section>
@@ -208,35 +311,36 @@ const ProjectsGallery = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   
   const projects: Project[] = [
-    { id: '1', title: '云端美术馆', category: '文化建筑', description: '流畅的曲线模拟云朵的形态。', image: 'https://picsum.photos/seed/p1/600/600', type: 'sketch' },
-    { id: '2', title: '静谧住宅', category: '住宅设计', description: '极简主义与自然光的完美契合。', image: 'https://picsum.photos/seed/p2/600/600', type: 'cad' },
-    { id: '3', title: '科技绿洲', category: '办公空间', description: '整合垂直绿化的生态办公。', image: 'https://picsum.photos/seed/p3/600/600', type: 'final' },
-    { id: '4', title: '历史重构', category: '城市更新', description: '旧工业遗址的现代转译。', image: 'https://picsum.photos/seed/p4/600/600', type: 'sketch' },
-    { id: '5', title: '光影教堂', category: '公共建筑', description: '神圣空间的几何秩序。', image: 'https://picsum.photos/seed/p5/600/600', type: 'cad' },
-    { id: '6', title: '山间书院', category: '教育设施', description: '顺应地形的山势建筑。', image: 'https://picsum.photos/seed/p6/600/600', type: 'final' },
+    { id: '1', title: '静安云端美术馆', category: '文化建筑', description: '以流动的曲线消融边界，营造无界艺术空间。', image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600', type: 'sketch' },
+    { id: '2', title: '余杭极简住宅', category: '住宅设计', description: '极致的留白与比例控制，重构生活秩序。', image: 'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&q=80&w=600', type: 'cad' },
+    { id: '3', title: '杭州数字绿谷', category: '商业综合体', description: '生态优先的垂直办公社区。', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=600', type: 'final' },
+    { id: '4', title: '旧城更新：1958创意园', category: '城市更新', description: '在历史的肌理上植入现代功能。', image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=600', type: 'sketch' },
+    { id: '5', title: '光影礼拜堂', category: '公共建筑', description: '光的建筑学实践。', image: 'https://images.unsplash.com/photo-1507652313519-d4511f7ca4ad?auto=format&fit=crop&q=80&w=600', type: 'cad' },
+    { id: '6', title: '莫干山悦榕庄', category: '精品酒店', description: '隐于山林的自然主义表达。', image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=600', type: 'final' },
   ];
 
   const filtered = activeFilter === 'all' ? projects : projects.filter(p => p.type === activeFilter);
 
   return (
-    <section id="作品集" className="py-24 bg-stone-50">
+    <section id="作品集" className="py-32 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-          <div>
-            <h2 className="text-4xl font-bold mb-4">精选作品</h2>
-            <p className="text-stone-500 max-w-md">我们每一份图纸都是对理想空间的严谨承诺。</p>
-          </div>
-          <div className="flex space-x-4 bg-stone-200/50 p-1 rounded-full">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+          <FadeInView direction="right">
+            <h2 className="text-xs font-black tracking-[0.5em] text-stone-300 uppercase mb-4">SELECTED WORKS</h2>
+            <h3 className="text-4xl md:text-5xl font-bold">精选项目巡礼</h3>
+          </FadeInView>
+          
+          <div className="flex space-x-2 bg-stone-100 p-1.5 rounded-none">
             {[
-              { id: 'all', label: '全部' },
-              { id: 'sketch', label: '手绘草图' },
-              { id: 'cad', label: 'CAD制图' },
-              { id: 'final', label: '实景方案' }
+              { id: 'all', label: '全部作品' },
+              { id: 'sketch', label: '手绘阶段' },
+              { id: 'cad', label: '施工深化' },
+              { id: 'final', label: '建成实景' }
             ].map(filter => (
               <button
                 key={filter.id}
                 onClick={() => setActiveFilter(filter.id)}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${activeFilter === filter.id ? 'bg-white shadow-md text-stone-900' : 'text-stone-500 hover:text-stone-700'}`}
+                className={`px-6 py-2.5 text-xs font-black tracking-[0.2em] transition-all uppercase ${activeFilter === filter.id ? 'bg-white shadow-lg text-stone-900' : 'text-stone-400 hover:text-stone-700'}`}
               >
                 {filter.label}
               </button>
@@ -244,38 +348,38 @@ const ProjectsGallery = () => {
           </div>
         </div>
 
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           <AnimatePresence mode="popLayout">
-            {filtered.map((project) => (
+            {filtered.map((project, index) => (
               <motion.div
                 key={project.id}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4 }}
-                className="group relative overflow-hidden rounded-xl bg-white shadow-sm hover:shadow-xl transition-all"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="group relative cursor-pointer"
               >
-                <div className="aspect-square overflow-hidden">
+                <div className="aspect-[3/4] overflow-hidden bg-stone-100 relative">
                   <img 
                     src={project.image} 
                     alt={project.title} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
                   />
-                </div>
-                <div className="absolute inset-0 bg-stone-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8 text-white">
-                  <span className="text-xs font-bold tracking-widest uppercase mb-2 opacity-70">{project.category}</span>
-                  <h3 className="text-2xl font-bold mb-2">{project.title}</h3>
-                  <p className="text-sm text-stone-300 mb-6">{project.description}</p>
-                  <button className="flex items-center space-x-2 text-white font-medium hover:underline">
-                    <span>详情</span>
-                    <ChevronRight size={16} />
-                  </button>
+                  {/* Overlay Info */}
+                  <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-stone-900 via-stone-900/20 to-transparent translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                    <span className="text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase mb-2 block">{project.category}</span>
+                    <h4 className="text-2xl font-bold text-white mb-4 leading-tight">{project.title}</h4>
+                    <button className="inline-flex items-center space-x-2 text-white text-xs font-black tracking-widest border-b border-white/30 pb-1 hover:border-white transition-all">
+                      <span>查看详情</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -295,68 +399,93 @@ const AIStudio = () => {
   };
 
   return (
-    <section id="AI灵感" className="py-24 bg-stone-900 text-white overflow-hidden relative">
-      <div className="absolute top-0 right-0 w-1/3 h-full bg-stone-800 opacity-20 -skew-x-12 translate-x-20"></div>
+    <section id="AI实验室" className="py-32 bg-[#121212] text-white relative arch-grid" style={{ backgroundSize: '60px 60px' }}>
+      <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-3xl"></div>
       
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
           <div>
-            <div className="inline-flex items-center space-x-2 bg-stone-800 px-4 py-1 rounded-full mb-6">
-              <Zap size={16} className="text-amber-400" />
-              <span className="text-xs font-bold tracking-widest">AI INSPIRATION LAB</span>
+            <div className="inline-flex items-center space-x-3 bg-white/5 border border-white/10 px-4 py-2 mb-8 backdrop-blur-md">
+              <Zap size={18} className="text-amber-400 fill-amber-400" />
+              <span className="text-[10px] font-black tracking-[0.4em] uppercase">GenAI Architectural Core</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">灵感生成实验室</h2>
-            <p className="text-stone-400 text-lg mb-10 leading-relaxed">
-              输入您的设计构想，天筑AI将即刻为您生成初步的建筑草画或制图概念，协助您在项目初期快速具象化创意。
+            <h2 className="text-5xl md:text-6xl font-bold mb-8 leading-tight">AI 辅助灵感生成</h2>
+            <p className="text-stone-400 text-xl font-light mb-12 leading-relaxed">
+              天筑自研 AI 建筑大脑，支持输入一段构想描述，系统将自动生成专业的手绘初稿或 CAD 空间逻辑模型。
             </p>
             
-            <div className="space-y-4">
-              <div className="relative">
+            <div className="space-y-6">
+              <div className="relative group">
                 <input 
                   type="text" 
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="例如：位于悬崖边的极简主义混凝土别墅" 
-                  className="w-full bg-stone-800 border-none rounded-xl px-6 py-5 text-white placeholder-stone-500 focus:ring-2 focus:ring-stone-500 outline-none"
+                  placeholder="例如：苏州园林风格的现代科技办公总部" 
+                  className="w-full bg-stone-800/50 border border-stone-700 py-6 px-8 text-white placeholder-stone-600 focus:outline-none focus:border-white transition-all text-lg"
                 />
                 <button 
                   onClick={handleGenerate}
                   disabled={isGenerating || !prompt}
-                  className="absolute right-2 top-2 bottom-2 bg-white text-stone-900 px-6 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-stone-100 transition-colors"
+                  className="absolute right-3 top-3 bottom-3 bg-white text-stone-900 px-8 font-black tracking-widest text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-stone-200 transition-all"
                 >
-                  {isGenerating ? '生成中...' : '即刻生成'}
+                  {isGenerating ? '正在构思...' : '立即生成'}
                 </button>
               </div>
-              <p className="text-xs text-stone-500 ml-2">提示：描述越详细，生成的建筑概念越精准。</p>
+              
+              <div className="flex items-center space-x-6">
+                <div className="flex -space-x-2">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="w-8 h-8 rounded-full border-2 border-stone-900 overflow-hidden">
+                      <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
+                    </div>
+                  ))}
+                </div>
+                <span className="text-xs text-stone-500 font-bold tracking-widest">已有 2,400+ 建筑师使用 AI 进行概念辅助</span>
+              </div>
             </div>
           </div>
 
-          <div className="relative flex justify-center items-center">
-            <div className="w-full aspect-[16/9] bg-stone-800 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center border border-stone-700">
-              {result ? (
-                <motion.img 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  src={result} 
-                  alt="AI Generation" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="text-center p-8">
-                  {isGenerating ? (
-                    <div className="space-y-4">
-                      <div className="w-12 h-12 border-4 border-stone-600 border-t-white rounded-full animate-spin mx-auto"></div>
-                      <p className="text-stone-400">正在构建您的设计蓝图...</p>
+          <div className="relative group">
+            <div className="aspect-[16/10] bg-stone-900/50 border border-stone-800 relative overflow-hidden flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {result ? (
+                  <motion.div 
+                    key="result"
+                    initial={{ opacity: 0, scale: 1.05 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="w-full h-full p-4"
+                  >
+                    <img src={result} alt="AI Blueprint" className="w-full h-full object-contain" />
+                    <div className="absolute top-8 right-8 flex space-x-2">
+                      <button className="p-2 bg-stone-900/80 border border-white/20 hover:bg-white hover:text-stone-900 transition-all">
+                        <Maximize2 size={16} />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="space-y-4 opacity-30">
-                      <ImageIcon size={64} className="mx-auto" />
-                      <p>等待灵感注入</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="placeholder"
+                    className="text-center p-12 opacity-20 group-hover:opacity-40 transition-opacity"
+                  >
+                    {isGenerating ? (
+                      <div className="space-y-6">
+                        <div className="w-16 h-16 border-2 border-stone-600 border-t-white rounded-full animate-spin mx-auto"></div>
+                        <p className="text-xs font-black tracking-[0.4em] uppercase">正在构建几何秩序...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <ImageIcon size={80} className="mx-auto mb-6" />
+                        <p className="text-sm font-black tracking-[0.2em] uppercase">等待灵感注入实验室</p>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+            
+            {/* Architectural Grid Lines decoration */}
+            <div className="absolute -top-4 -left-4 w-12 h-12 border-t-2 border-l-2 border-stone-700 pointer-events-none"></div>
+            <div className="absolute -bottom-4 -right-4 w-12 h-12 border-b-2 border-r-2 border-stone-700 pointer-events-none"></div>
           </div>
         </div>
       </div>
@@ -366,55 +495,64 @@ const AIStudio = () => {
 
 const Footer = () => {
   return (
-    <footer className="bg-white py-20 border-t border-stone-100">
+    <footer className="bg-stone-50 py-32 border-t border-stone-100">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          <div className="col-span-1 md:col-span-1">
-            <div className="flex items-center space-x-2 mb-6">
-              <div className="w-8 h-8 bg-stone-900 flex items-center justify-center rounded-sm">
-                <span className="text-white font-bold">T</span>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-20 mb-24">
+          <div className="md:col-span-5">
+            <div className="flex items-center space-x-3 mb-10">
+              <div className="w-12 h-12 bg-stone-900 flex items-center justify-center">
+                <span className="text-white font-black text-2xl">T</span>
               </div>
-              <span className="font-bold tracking-widest">天筑设计</span>
+              <span className="font-black tracking-[0.3em] text-xl">TIANZHU</span>
             </div>
-            <p className="text-stone-500 text-sm leading-relaxed">
-              天筑工程设计院成立于2005年，专注于高端商业、文化及住宅建筑设计。我们坚持原创，致敬工匠精神。
-            </p>
+            <h4 className="text-3xl font-bold text-stone-900 mb-8 leading-snug">
+              为您打造具有时代精神与<br />人文关怀的建筑地标
+            </h4>
+            <div className="flex space-x-6">
+              {['Wechat', 'Xiaohongshu', 'Instagram'].map(social => (
+                <a key={social} href="#" className="text-xs font-black tracking-[0.2em] uppercase text-stone-400 hover:text-stone-900 transition-colors">
+                  {social}
+                </a>
+              ))}
+            </div>
           </div>
           
-          <div>
-            <h4 className="font-bold mb-6">快速链接</h4>
-            <ul className="space-y-4 text-sm text-stone-500">
-              <li><a href="#" className="hover:text-stone-900 transition-colors">最新动态</a></li>
-              <li><a href="#" className="hover:text-stone-900 transition-colors">核心团队</a></li>
-              <li><a href="#" className="hover:text-stone-900 transition-colors">奖项荣誉</a></li>
-              <li><a href="#" className="hover:text-stone-900 transition-colors">人才招聘</a></li>
+          <div className="md:col-span-2">
+            <h5 className="font-black text-xs tracking-[0.3em] uppercase text-stone-300 mb-10">探索页面</h5>
+            <ul className="space-y-5 text-sm font-bold">
+              <li><a href="#作品集" className="text-stone-500 hover:text-stone-900 transition-colors">作品全集</a></li>
+              <li><a href="#设计流程" className="text-stone-500 hover:text-stone-900 transition-colors">设计流程</a></li>
+              <li><a href="#AI实验室" className="text-stone-500 hover:text-stone-900 transition-colors">AI实验室</a></li>
+              <li><a href="#" className="text-stone-500 hover:text-stone-900 transition-colors">联系我们</a></li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="font-bold mb-6">设计服务</h4>
-            <ul className="space-y-4 text-sm text-stone-500">
-              <li><a href="#" className="hover:text-stone-900 transition-colors">方案深化</a></li>
-              <li><a href="#" className="hover:text-stone-900 transition-colors">施工图外包</a></li>
-              <li><a href="#" className="hover:text-stone-900 transition-colors">BIM咨询</a></li>
-              <li><a href="#" className="hover:text-stone-900 transition-colors">景观设计</a></li>
+          <div className="md:col-span-2">
+            <h5 className="font-black text-xs tracking-[0.3em] uppercase text-stone-300 mb-10">服务范畴</h5>
+            <ul className="space-y-5 text-sm font-bold text-stone-500">
+              <li>超高层办公</li>
+              <li>高端豪宅</li>
+              <li>城市旧改</li>
+              <li>景观与室内</li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="font-bold mb-6">联系我们</h4>
-            <p className="text-sm text-stone-500 mb-4">上海市静安区灵感路888号建筑大厦12F</p>
-            <p className="text-sm text-stone-500 mb-4">+86 021 8888 6666</p>
-            <p className="text-sm text-stone-500">contact@tianzhudesign.com</p>
+          <div className="md:col-span-3">
+            <h5 className="font-black text-xs tracking-[0.3em] uppercase text-stone-300 mb-10">天筑总部</h5>
+            <p className="text-stone-500 text-sm font-bold leading-relaxed mb-6">
+              上海市静安区苏州河路1908号<br />
+              天筑设计大厦 8-12F
+            </p>
+            <p className="text-stone-900 text-xl font-bold">+86 (21) 5288 9900</p>
           </div>
         </div>
         
-        <div className="flex flex-col md:flex-row justify-between items-center pt-12 border-t border-stone-100 text-stone-400 text-xs">
-          <p>© 2024 天筑工程设计院. 版权所有. 沪ICP备12345678号</p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-stone-900">隐私政策</a>
-            <a href="#" className="hover:text-stone-900">服务条款</a>
-            <a href="#" className="hover:text-stone-900">Cookie设置</a>
+        <div className="flex flex-col md:flex-row justify-between items-center pt-16 border-t border-stone-200">
+          <p className="text-[10px] font-bold text-stone-400 tracking-[0.1em]">© 2024 TIANZHU ENGINEERING DESIGN INSTITUTE. ALL RIGHTS RESERVED.</p>
+          <div className="flex items-center space-x-2 mt-6 md:mt-0 opacity-40 grayscale">
+            <div className="w-8 h-8 border border-stone-900 flex items-center justify-center font-bold text-[10px]">GB</div>
+            <div className="w-8 h-8 border border-stone-900 flex items-center justify-center font-bold text-[10px]">A+</div>
+            <div className="w-8 h-8 border border-stone-900 flex items-center justify-center font-bold text-[10px]">ISO</div>
           </div>
         </div>
       </div>
@@ -433,38 +571,52 @@ const App: React.FC = () => {
   });
 
   return (
-    <div className="relative">
+    <div className="relative selection:bg-stone-900 selection:text-white">
+      {/* Scroll Progress Bar */}
       <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-stone-900 origin-left z-[60]"
+        className="fixed top-0 left-0 right-0 h-[3px] bg-stone-900 origin-left z-[100]"
         style={{ scaleX }}
       />
       
+      {/* Custom Cursor Decoration (optional visual flair) */}
+      <div className="fixed top-0 left-0 pointer-events-none z-[9999] p-4 hidden lg:block">
+        <MousePointer2 size={12} className="text-stone-400 rotate-12" />
+      </div>
+
       <Navbar />
       
       <main>
         <Hero />
-        <ProcessSection />
+        
+        {/* Subtle separator */}
+        <div className="w-full h-20 bg-gradient-to-b from-[#f9f8f6] to-white"></div>
+        
+        <ProcessEvolution />
+        
         <ProjectsGallery />
+        
         <AIStudio />
         
         {/* Contact CTA Section */}
-        <section className="py-24 bg-white">
-          <div className="max-w-5xl mx-auto px-6">
-            <motion.div 
-              whileHover={{ scale: 1.01 }}
-              className="bg-stone-50 rounded-3xl p-12 md:p-20 text-center relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 p-4">
-                <Plus size={40} className="text-stone-200" />
-              </div>
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">准备好开启您的建筑旅程了吗？</h2>
-              <p className="text-stone-500 text-lg mb-10 max-w-2xl mx-auto">
-                无论是摩天大楼的宏伟蓝图，还是温馨私宅的精致笔触，我们都将以专业的态度为您保驾护航。
+        <section className="py-40 bg-white overflow-hidden relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-black text-stone-50/50 whitespace-nowrap pointer-events-none -z-10 uppercase italic">
+            TIANZHU DESIGN
+          </div>
+          
+          <div className="max-w-5xl mx-auto px-6 text-center">
+            <FadeInView>
+              <h2 className="text-5xl md:text-7xl font-bold text-stone-900 mb-12">共赴下一场<br />空间进化</h2>
+              <p className="text-stone-500 text-xl font-light mb-16 max-w-2xl mx-auto">
+                无论是摩天大楼的宏伟构想，还是私人官邸的精致笔触，天筑设计始终以专业的工程素养为您的每一个灵感保驾护航。
               </p>
-              <button className="bg-stone-900 text-white px-10 py-5 rounded-full text-lg font-bold hover:shadow-xl transition-all">
-                立即联系我们
-              </button>
-            </motion.div>
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-stone-900 text-white px-16 py-7 text-xs font-black tracking-[0.4em] uppercase shadow-2xl shadow-stone-300 hover:bg-stone-800 transition-all"
+              >
+                立即发起设计咨询
+              </motion.button>
+            </FadeInView>
           </div>
         </section>
       </main>
