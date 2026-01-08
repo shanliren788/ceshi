@@ -1,0 +1,7 @@
+{
+  "name": "天筑工程设计院 - 概念到现实的建筑艺术",
+  "description": "一个高端建筑工程设计院的展示与互动平台，展示从手绘草案到CAD图纸的专业设计流程。集成Gemini AI辅助建筑灵感生成。",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
